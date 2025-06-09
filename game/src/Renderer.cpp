@@ -2,7 +2,7 @@
 #include "raymath.h"
 #include <thread>
 
-#define calcType 0;
+#define AA 1;
 #define MT 1;
 
 namespace Utils {
@@ -59,49 +59,6 @@ void Renderer::ExportRender(const char* name) const
     UnloadImage(renderImage);
 }
 
-#if calcType
-void Renderer::OnResize()
-{
-    float focal_length = 1.0;
-    float viewport_height = 2.0;
-    float viewport_width = viewport_height * (double(m_ScreenWidth) / m_ScreenHeight);
-    Vector3 camera_center = { 0, 0, 1 };
-
-    // Calculate the vectors across the horizontal and down the vertical viewport edges.
-    auto viewport_u = Vector3{ viewport_width, 0, 0 };
-    auto viewport_v = Vector3{ 0, -viewport_height, 0 };
-
-    // Calculate the horizontal and vertical delta vectors from pixel to pixel.
-    auto pixel_delta_u = viewport_u / m_ScreenWidth;
-    auto pixel_delta_v = viewport_v / m_ScreenHeight;
-
-    // Calculate the location of the upper left pixel.
-    auto viewport_upper_left = camera_center - Vector3{ 0, 0, focal_length } - viewport_u / 2 - viewport_v / 2;
-    auto pixel00_loc = viewport_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
-
-    // Render
-
-    //std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
-
-    
-    for (int y = 0; y < m_ScreenHeight; y++)
-    {
-        for (int x = 0; x < m_ScreenWidth; x++)
-        {
-            auto pixel_center = pixel00_loc + (pixel_delta_u*x) + (pixel_delta_v*y);
-            auto ray_direction = pixel_center - camera_center;
-            Ray r{ camera_center, ray_direction };
-
-            Vector3 pixel_color = RayColor(r, world);
-            Vector4 color = { pixel_color.x, pixel_color.y,pixel_color.z, 1.0f };
-            color = Utils::Vector4Clamp(color, Vector4Zero(), Vector4One());
-            ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
-        }
-    }
-    //ImageFlipVertical(&m_FinalImage);
-    UpdateTexture(m_Texture2D, m_FinalImage.data);
-}
-#else
 void Renderer::OnResize()
 {
     m_ScreenWidth = GetScreenWidth();
@@ -114,12 +71,15 @@ void Renderer::OnResize()
     UnloadTexture(m_Texture2D);
     m_Texture2D = LoadTextureFromImage(m_FinalImage);
 
-#if MT
-     std::vector<std::thread> threads;
+#if !AA
+    samples = 1;
+#endif
 
-    for (int t = 0; t < 4; ++t) {
+#if MT
+    std::vector<std::thread> threads;
+    for (int t = 0; t < threadCount; ++t) {
         threads.emplace_back([=]() {
-            for (uint32_t y = t; y < m_ScreenWidth; y += 4) {
+            for (uint32_t y = t; y < m_ScreenWidth; y += threadCount) {
                 for (uint32_t x = 0; x < m_ScreenHeight; ++x) {
                     Vector4 color = Vector4Zero();
                     for (int sample = 0; sample < samples; sample++)
@@ -132,7 +92,6 @@ void Renderer::OnResize()
             }
         });
     }
-
     for (auto& thread : threads)
         thread.join();
 #else
@@ -155,7 +114,7 @@ void Renderer::OnResize()
     ImageFlipVertical(&m_FinalImage);
     UpdateTexture(m_Texture2D, m_FinalImage.data);
 }
-#endif
+
 void Renderer::Render() const
 {
     DrawTexture(m_Texture2D, 0, 0, WHITE);
@@ -163,7 +122,12 @@ void Renderer::Render() const
 
 Vector4 Renderer::TraceRay(int x, int y)
 {
+#if AA
     Vector3 offset = SampleSquare();
+#else
+    Vector3 offset = Vector3Zero();
+#endif
+
     Vector2 coord = { ((float)x + offset.x) / (float)m_FinalImage.width, ((float)y + offset.y) / (float)m_FinalImage.height };
     coord = Vector2SubtractValue((coord * 2.0f), 1.0f);  // Converting from  0 -> 1 to -1 -> 1
     coord.x *= m_AspectRatio; //compensating for the aspect ratio
