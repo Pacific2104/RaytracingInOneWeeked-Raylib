@@ -28,7 +28,7 @@ public:
         rec.t = root;
         rec.p = r.position + r.direction * rec.t;
         Vector3 outward_normal = (rec.p - center) / radius;
-        rec.set_face_normal(r, outward_normal);
+        rec.SetFaceNormal(r, outward_normal);
 
         return true;
     }
