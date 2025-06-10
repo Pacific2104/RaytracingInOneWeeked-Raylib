@@ -19,7 +19,7 @@ private:
     Vector4 TraceRay(int x, int y);
     float HitSphere(const Vector3& center, float radius, const Ray& r);
     Vector3 RayColor(const Ray& r, const Hittable& world);
-    Vector3 SampleSquare();
+    Vector3 SampleSquare(uint32_t seed);
 
 private:
     Image m_FinalImage;

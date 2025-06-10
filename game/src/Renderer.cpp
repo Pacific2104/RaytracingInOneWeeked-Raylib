@@ -2,7 +2,7 @@
 #include "raymath.h"
 #include <thread>
 
-#define AA 0;
+#define AA 1;
 #define MT 1;
 
 namespace Utils {
@@ -17,13 +17,18 @@ namespace Utils {
 
         return result;
     }
-    static float RandomFloat() {
-        // Returns a random real in [0,1).
-        return std::rand() / (RAND_MAX + 1.0);
+    static uint32_t PCG_Hash(uint32_t input) {
+        uint32_t state = input * 747796405u + 2891336453u;
+        uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 27703737u;
+        return (word >> 22u) ^ word;
     }
-    static float RandomFloat(float min, float max) {
+    static float RandomFloat(uint32_t& seed) {
+        seed = PCG_Hash(seed);
+        return (float)seed / (float)std::numeric_limits<uint32_t>::max();
+    }
+    static float RandomFloat(uint32_t& seed, float min, float max) {
         // Returns a random real in [min,max).
-        return min + (max - min) * RandomFloat();
+        return min + (max - min) * RandomFloat(seed);
     }
 }
 
@@ -87,7 +92,7 @@ void Renderer::UpdateTextureBuffer()
             m_AccumulationData[x + y * m_ScreenWidth] += color;
 
             Vector4 accumulatedColor = m_AccumulationData[x + y * m_ScreenWidth];
-            Vector4 frameVec4 = { (float)m_FrameIndex,(float)m_FrameIndex ,(float)m_FrameIndex ,(float)m_FrameIndex };
+            Vector4 frameVec4 = { (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex };
             accumulatedColor = accumulatedColor / frameVec4;
 
             accumulatedColor = Utils::Vector4Clamp(accumulatedColor, Vector4Zeros, Vector4Ones);
@@ -109,8 +114,11 @@ void Renderer::Render()
 
 Vector4 Renderer::TraceRay(int x, int y)
 {
+    uint32_t seed = x + y * m_FinalImage.width;
+    seed += m_FrameIndex;
+
 #if AA
-    Vector3 offset = SampleSquare();
+    Vector3 offset = SampleSquare(seed);
 #else
     Vector3 offset = Vector3Zeros;
 #endif
@@ -126,8 +134,8 @@ Vector4 Renderer::TraceRay(int x, int y)
     return Vector4{ color.x, color.y,color.z, 1.0f };
 }
 
-Vector3 Renderer::SampleSquare() {
-    return { Utils::RandomFloat() - 0.5f,Utils::RandomFloat() - 0.5f ,0 };
+Vector3 Renderer::SampleSquare(uint32_t seed) {
+    return { Utils::RandomFloat(seed) - 0.5f,Utils::RandomFloat(seed) - 0.5f ,0};
 }
 
 float Renderer::HitSphere(const Vector3& center, float radius, const Ray& r)
