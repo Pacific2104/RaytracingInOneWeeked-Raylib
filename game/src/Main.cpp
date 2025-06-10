@@ -7,7 +7,7 @@ int main(void)
     int screenHeight = 512;
 
     InitWindow(screenWidth, screenHeight, "raytracing in one weekend");
-    SetWindowState(FLAG_WINDOW_RESIZABLE);
+    //SetWindowState(FLAG_WINDOW_RESIZABLE);
     
     Renderer renderer(8);
 
@@ -19,7 +19,7 @@ int main(void)
         BeginDrawing();
         ClearBackground(GetColor(0x0f0f0fff));
         renderer.Render();
-        //DrawFPS(GetScreenWidth() - 100, 15);
+        DrawFPS(GetScreenWidth() - 100, 15);
         EndDrawing();
         if (IsKeyPressed(KEY_A)) {
             renderer.ExportRender("Render.png");

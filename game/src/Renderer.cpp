@@ -87,6 +87,28 @@ void Renderer::UpdateTextureBuffer()
     if (m_FrameIndex == 1)
         memset(m_AccumulationData, 0, m_ScreenWidth * m_ScreenHeight * sizeof(Vector4));
 
+#if MT
+    std::vector<std::thread> threads;
+    for (int t = 0; t < threadCount; ++t) {
+        threads.emplace_back([=]() {
+            for (uint32_t y = t; y < m_ScreenWidth; y += threadCount) {
+                for (uint32_t x = 0; x < m_ScreenHeight; ++x) {
+                    Vector4 color = TraceRay(x, y);
+                    m_AccumulationData[x + y * m_ScreenWidth] += color;
+
+                    Vector4 accumulatedColor = m_AccumulationData[x + y * m_ScreenWidth];
+                    Vector4 frameVec4 = { (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex };
+                    accumulatedColor = accumulatedColor / frameVec4;
+
+                    accumulatedColor = Utils::Vector4Clamp(accumulatedColor, Vector4Zeros, Vector4Ones);
+                    ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(accumulatedColor));
+                }
+            }
+        });
+    }
+    for (auto& thread : threads)
+        thread.join();
+#else
     for (int y = 0; y < m_ScreenHeight; y++)
     {
         for (int x = 0; x < m_ScreenWidth; x++)
@@ -102,6 +124,7 @@ void Renderer::UpdateTextureBuffer()
             ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(accumulatedColor));
         }
     }
+#endif
 
     ImageFlipVertical(&m_FinalImage);
     UpdateTexture(m_Texture2D, m_FinalImage.data);
@@ -130,7 +153,7 @@ Vector4 Renderer::TraceRay(int x, int y)
     coord = Vector2SubtractValue((coord * 2.0f), 1.0f);  // Converting from  0 -> 1 to -1 -> 1
     coord.x *= m_AspectRatio; //compensating for the aspect ratio
 
-    Vector3 rayOrigin = { 0.0f, 0.0f, 0.0f };
+    Vector3 rayOrigin = { 0.0f, 0.0f, 1.0f };
     Vector3 rayDirection = { coord.x, coord.y, -1.0f };
 
     Vector3 color = RayColor({ rayOrigin, rayDirection }, world);
