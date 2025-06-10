@@ -88,9 +88,9 @@ void Renderer::UpdateTextureBuffer()
 
             Vector4 accumulatedColor = m_AccumulationData[x + y * m_ScreenWidth];
             Vector4 frameVec4 = { (float)m_FrameIndex,(float)m_FrameIndex ,(float)m_FrameIndex ,(float)m_FrameIndex };
-            accumulatedColor = Vector4Divide(accumulatedColor, frameVec4);
+            accumulatedColor = accumulatedColor / frameVec4;
 
-            accumulatedColor = Utils::Vector4Clamp(accumulatedColor, Vector4Zero(), Vector4One());
+            accumulatedColor = Utils::Vector4Clamp(accumulatedColor, Vector4Zeros, Vector4Ones);
             ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(accumulatedColor));
         }
     }
@@ -112,7 +112,7 @@ Vector4 Renderer::TraceRay(int x, int y)
 #if AA
     Vector3 offset = SampleSquare();
 #else
-    Vector3 offset = Vector3Zero();
+    Vector3 offset = Vector3Zeros;
 #endif
 
     Vector2 coord = { ((float)x + offset.x) / (float)m_FinalImage.width, ((float)y + offset.y) / (float)m_FinalImage.height };
@@ -154,10 +154,10 @@ Vector3 Renderer::RayColor(const Ray& r, const Hittable& world)
     }*/
     HitRecord rec;
     if (world.Hit(r, Interval(0, INFINITY), rec)) {
-        return (rec.normal + Vector3{ 1, 1, 1 }) * 0.5f;
+        return (rec.normal + Vector3Ones) * 0.5f;
     }
 
     Vector3 unit_direction = Vector3Normalize(r.direction);
     auto a = 0.5f * (unit_direction.y + 1.0f);
-    return  Vector3Scale(Vector3{ 1.0f, 1.0f, 1.0f }, (1.0f - a)) + Vector3Scale(Vector3{ 0.5f, 0.7f, 1.0f }, a);
+    return  (Vector3Ones * (1.0f - a)) + (Vector3{ 0.5f, 0.7f, 1.0f } * a);
 }
