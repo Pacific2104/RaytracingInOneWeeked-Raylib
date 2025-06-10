@@ -2,7 +2,7 @@
 #include "raymath.h"
 #include <thread>
 
-#define AA 1;
+#define AA 0;
 #define MT 1;
 
 namespace Utils {
@@ -27,8 +27,7 @@ namespace Utils {
     }
 }
 
-Renderer::Renderer(int samples, int threads) :
-    samples(samples),
+Renderer::Renderer(int threads) :
     threadCount(threads)
 {
     m_ScreenWidth = GetScreenWidth();
@@ -38,10 +37,11 @@ Renderer::Renderer(int samples, int threads) :
     m_FinalImage = GenImageColor(m_ScreenWidth, m_ScreenHeight, RAYWHITE);
     m_Texture2D = LoadTextureFromImage(m_FinalImage);
 
+    delete[] m_AccumulationData;
+    m_AccumulationData = new Vector4[m_ScreenWidth * m_ScreenHeight];
+
     world.add(make_shared<Sphere>(Vector3{ 0, 0, -1 }, 0.5));
     world.add(make_shared<Sphere>(Vector3{ 0, -100.5, -1 }, 100));
-
-    OnResize();
 }
 
 void Renderer::ExportRender(const char* name) const
@@ -71,52 +71,39 @@ void Renderer::OnResize()
     UnloadTexture(m_Texture2D);
     m_Texture2D = LoadTextureFromImage(m_FinalImage);
 
-#if !AA
-    samples = 1;
-#endif
+    m_FrameIndex = 1;
+}
 
-#if MT
-    std::vector<std::thread> threads;
-    for (int t = 0; t < threadCount; ++t) {
-        threads.emplace_back([=]() {
-            for (uint32_t y = t; y < m_ScreenWidth; y += threadCount) {
-                for (uint32_t x = 0; x < m_ScreenHeight; ++x) {
-                    Vector4 color = Vector4Zero();
-                    for (int sample = 0; sample < samples; sample++)
-                        color += TraceRay(x, y);
+void Renderer::UpdateTextureBuffer()
+{
+    if (m_FrameIndex == 1)
+        memset(m_AccumulationData, 0, m_ScreenWidth * m_ScreenHeight * sizeof(Vector4));
 
-                    color *= 1.0f / (float)samples;
-                    color = Utils::Vector4Clamp(color, Vector4Zero(), Vector4One());
-                    ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
-                }
-            }
-        });
-    }
-    for (auto& thread : threads)
-        thread.join();
-#else
     for (int y = 0; y < m_ScreenHeight; y++)
     {
         for (int x = 0; x < m_ScreenWidth; x++)
         {
-            Vector4 color = Vector4Zero();
-            for (int sample = 0; sample < samples; sample++)
-            {
-                color += TraceRay(x, y);
-            }
-            color *= 1.0f / (float)samples;
-            color = Utils::Vector4Clamp(color, Vector4Zero(), Vector4One());
-            ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
-            //ImageDrawPixel(&m_FinalImage, x, y, GetColor(RayTracing::Random::UInt(0x000000ff, 0xffffffff)));
+            Vector4 color = TraceRay(x, y);
+            m_AccumulationData[x + y * m_ScreenWidth] += color;
+
+            Vector4 accumulatedColor = m_AccumulationData[x + y * m_ScreenWidth];
+            Vector4 frameVec4 = { (float)m_FrameIndex,(float)m_FrameIndex ,(float)m_FrameIndex ,(float)m_FrameIndex };
+            accumulatedColor = Vector4Divide(accumulatedColor, frameVec4);
+
+            accumulatedColor = Utils::Vector4Clamp(accumulatedColor, Vector4Zero(), Vector4One());
+            ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(accumulatedColor));
         }
     }
-#endif
+
     ImageFlipVertical(&m_FinalImage);
     UpdateTexture(m_Texture2D, m_FinalImage.data);
+
+    m_FrameIndex++;
 }
 
-void Renderer::Render() const
+void Renderer::Render()
 {
+    UpdateTextureBuffer();
     DrawTexture(m_Texture2D, 0, 0, WHITE);
 }
 
