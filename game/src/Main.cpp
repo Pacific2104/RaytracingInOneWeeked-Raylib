@@ -3,8 +3,8 @@
 
 int main(void) 
 {
-    int screenWidth = 1024;
-    int screenHeight = 1024;
+    int screenWidth = 512;
+    int screenHeight = 512;
 
     InitWindow(screenWidth, screenHeight, "raytracing in one weekend");
     SetWindowState(FLAG_WINDOW_RESIZABLE);

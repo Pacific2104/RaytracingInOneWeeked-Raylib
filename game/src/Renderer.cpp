@@ -70,6 +70,9 @@ void Renderer::OnResize()
     m_ScreenHeight = GetScreenHeight();
     m_AspectRatio = (float)m_ScreenWidth / (float)m_ScreenHeight;
 
+    delete[] m_AccumulationData;
+    m_AccumulationData = new Vector4[m_ScreenWidth * m_ScreenHeight];
+
     UnloadImage(m_FinalImage);
     m_FinalImage = GenImageColor(m_ScreenWidth, m_ScreenHeight, RAYWHITE);
 
