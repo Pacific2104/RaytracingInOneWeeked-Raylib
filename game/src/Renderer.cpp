@@ -99,7 +99,7 @@ void Renderer::ExportRender(const char* name) const
 
 void Renderer::Render(int x, int y)
 {
-    Vector4 color = CalculatePixelColor(m_ScreenWidth - x - 1, m_ScreenHeight - y - 1);
+    Vector4 color = CalculatePixelColor(x, y);
     ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
     UpdateTexture(m_Texture2D, m_FinalImage.data);
     DrawTexture(m_Texture2D, 0, 0, WHITE);
@@ -146,6 +146,7 @@ Vector4 Renderer::TraceRay(int x, int y)
     Vector2 coord = { ((float)x + offset.x) / (float)m_FinalImage.width, 
         ((float)y + offset.y) / (float)m_FinalImage.height };
     coord = Vector2SubtractValue((coord * 2.0f), 1.0f);  // Converting from  0 -> 1 to -1 -> 1
+    coord.y = 1.0f - coord.y;  // Flip vertically (Y) so (0,0) is top-left
     coord.x *= m_AspectRatio; //compensating for the aspect ratio
 
     Vector3 rayOrigin = { 0.0f, 0.0f, 0.0f };
