@@ -40,6 +40,12 @@ namespace Utils {
     static Vector3 InUnitSphere(){
         return Vector3Normalize(RandomVector3(-1, 1));
     }
+    static float LinearToGamma(float linearComponent)
+    {
+        if (linearComponent > 0)
+            return std::sqrt(linearComponent);
+        return 0;
+    }
 }
 
 Renderer::Renderer(int threads) :
@@ -139,26 +145,27 @@ void Renderer::UpdateTextureBuffer()
 
 Vector4 Renderer::CalculatePixelColor(int x, int y)
 {
-#if AC 
     Vector4 color = Vector4Zero();
+    Vector4 sampledColor = Vector4Zero();
     for (int sample = 0; sample < samples; sample++) {
-        color += TraceRay(x, y);
+        sampledColor += TraceRay(x, y);
     }
-    color *= 1.0f / (float)samples;
-    m_AccumulationData[x + y * m_ScreenWidth] += color;
-    Vector4 accumulatedColor = m_AccumulationData[x + y * m_ScreenWidth];
+    sampledColor *= 1.0f / (float)samples;
+
+#if AC 
+    m_AccumulationData[x + y * m_ScreenWidth] += sampledColor;
+    color = m_AccumulationData[x + y * m_ScreenWidth];
     //Vector4 frameVec4 = { (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex };
-    accumulatedColor = accumulatedColor / m_FrameIndex;
-    accumulatedColor = Utils::Vector4Clamp(accumulatedColor, Vector4Zeros, Vector4Ones);
-    return accumulatedColor;
+    color = color / m_FrameIndex;
 #else
-    Vector4 color = Vector4Zero();
-    for (int sample = 0; sample < samples; sample++)
-        color += TraceRay(x, y);
-    color *= 1.0f / (float)samples;
-    color = Utils::Vector4Clamp(color, Vector4Zero(), Vector4One());
-    return color;
+    color = sampledColor;
 #endif
+
+    color = Utils::Vector4Clamp(color, Vector4Zero(), Vector4One());
+    color.x = Utils::LinearToGamma(color.x);
+    color.y = Utils::LinearToGamma(color.y);
+    color.z = Utils::LinearToGamma(color.z);
+    return color;
 }
 
 void Renderer::Render()
@@ -214,8 +221,6 @@ Vector3 Renderer::RayColor(const Ray& r, const Hittable& world, int depth)
     if (world.Hit(r, Interval(0.001f, INFINITY), rec)) {
         Vector3 direction = rec.normal + Utils::InUnitSphere();
         return RayColor(Ray{ rec.p, direction }, world, depth-1) * 0.5f;
-
-        return (rec.normal + Vector3Ones) * 0.5f;
     }
 
     Vector3 unit_direction = Vector3Normalize(r.direction);
