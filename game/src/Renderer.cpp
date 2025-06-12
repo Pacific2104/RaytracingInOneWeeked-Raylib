@@ -3,7 +3,6 @@
 #include <execution>
 
 #define AA 1;
-#define MT 1;
 #define AC 1;
 
 namespace Utils {
@@ -48,19 +47,11 @@ namespace Utils {
     }
 }
 
-Renderer::Renderer(int threads) :
-    threadCount(threads)
+Renderer::Renderer()
 {
     m_ScreenWidth = GetScreenWidth();
     m_ScreenHeight = GetScreenHeight();
     m_AspectRatio = (float)m_ScreenWidth / (float)m_ScreenHeight;
-
-    m_ImageHorIter.resize(m_ScreenWidth);
-    m_ImageVerIter.resize(m_ScreenHeight);
-    for (uint32_t i = 0; i < m_ScreenWidth; i++)
-        m_ImageHorIter[i] = i;
-    for (uint32_t i = 0; i < m_ScreenHeight; i++)
-        m_ImageVerIter[i] = i;
 
     m_FinalImage = GenImageColor(m_ScreenWidth, m_ScreenHeight, RAYWHITE);
     m_Texture2D = LoadTextureFromImage(m_FinalImage);
@@ -87,60 +78,18 @@ void Renderer::ExportRender(const char* name) const
     UnloadImage(renderImage);
 }
 
-void Renderer::OnResize()
+void Renderer::Render(int x, int y)
 {
-    m_ScreenWidth = GetScreenWidth();
-    m_ScreenHeight = GetScreenHeight();
-    m_AspectRatio = (float)m_ScreenWidth / (float)m_ScreenHeight;
-
-    m_ImageHorIter.resize(m_ScreenWidth);
-    m_ImageVerIter.resize(m_ScreenHeight);
-    for (uint32_t i = 0; i < m_ScreenWidth; i++)
-        m_ImageHorIter[i] = i;
-    for (uint32_t i = 0; i < m_ScreenHeight; i++)
-        m_ImageVerIter[i] = i;
-
-    delete[] m_AccumulationData;
-    m_AccumulationData = new Vector4[m_ScreenWidth * m_ScreenHeight];
-
-    UnloadImage(m_FinalImage);
-    m_FinalImage = GenImageColor(m_ScreenWidth, m_ScreenHeight, RAYWHITE);
-
-    UnloadTexture(m_Texture2D);
-    m_Texture2D = LoadTextureFromImage(m_FinalImage);
-
-    m_FrameIndex = 1;
+    Vector4 color = CalculatePixelColor(x, y);
+    ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
+    UpdateTexture(m_Texture2D, m_FinalImage.data);
+    DrawTexture(m_Texture2D, 0, 0, WHITE);
 }
-
-void Renderer::UpdateTextureBuffer()
+void Renderer::UpdateRenderPass(int pass)
 {
+    m_FrameIndex = pass;
     if (m_FrameIndex == 1)
         memset(m_AccumulationData, 0, m_ScreenWidth * m_ScreenHeight * sizeof(Vector4));
-
-#if MT
-    std::for_each(std::execution::par, m_ImageVerIter.begin(), m_ImageVerIter.end(), [this](uint32_t y)
-        {
-            std::for_each(std::execution::par, m_ImageHorIter.begin(), m_ImageHorIter.end(), [this, y](uint32_t x)
-                {
-                    Vector4 color = CalculatePixelColor(x, y);
-                    ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
-                });
-        });
-#else
-    for (int y = 0; y < m_ScreenHeight; y++)
-    {
-        for (int x = 0; x < m_ScreenWidth; x++)
-        {
-            Vector4 color = CalculatePixelColor(x, y);
-            ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
-        }
-    }
-#endif
-
-    ImageFlipVertical(&m_FinalImage);
-    UpdateTexture(m_Texture2D, m_FinalImage.data);
-
-    m_FrameIndex++;
 }
 
 Vector4 Renderer::CalculatePixelColor(int x, int y)
@@ -155,7 +104,6 @@ Vector4 Renderer::CalculatePixelColor(int x, int y)
 #if AC 
     m_AccumulationData[x + y * m_ScreenWidth] += sampledColor;
     color = m_AccumulationData[x + y * m_ScreenWidth];
-    //Vector4 frameVec4 = { (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex };
     color = color / m_FrameIndex;
 #else
     color = sampledColor;
@@ -166,12 +114,6 @@ Vector4 Renderer::CalculatePixelColor(int x, int y)
     color.y = Utils::LinearToGamma(color.y);
     color.z = Utils::LinearToGamma(color.z);
     return color;
-}
-
-void Renderer::Render()
-{
-    UpdateTextureBuffer();
-    DrawTexture(m_Texture2D, 0, 0, WHITE);
 }
 
 Vector4 Renderer::TraceRay(int x, int y)

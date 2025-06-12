@@ -7,15 +7,13 @@
 
 class Renderer {
 public:
-    Renderer(int threads);
+    Renderer();
 
+    void Render(int x, int y);
+    void UpdateRenderPass(int pass);
     void ExportRender(const char* name) const;
 
-    void OnResize();
-    void Render();
-
 private:
-    void UpdateTextureBuffer();
     Vector4 CalculatePixelColor(int x, int y);
     Vector4 TraceRay(int x, int y);
     float HitSphere(const Vector3& center, float radius, const Ray& r);
@@ -32,10 +30,9 @@ private:
     int m_ScreenHeight;
     float m_AspectRatio;
 
-    int samples = 5;
-    int maxDepth = 10;
-    int threadCount = 1;
+    int samples = 50;
+    int maxDepth = 5;
+
     int m_FrameIndex = 1;
     Vector4* m_AccumulationData = nullptr;
-    std::vector<uint32_t> m_ImageHorIter, m_ImageVerIter;
 };
