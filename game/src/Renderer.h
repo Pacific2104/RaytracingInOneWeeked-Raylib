@@ -16,7 +16,6 @@ public:
 private:
     Vector4 CalculatePixelColor(int x, int y);
     Vector4 TraceRay(int x, int y);
-    float HitSphere(const Vector3& center, float radius, const Ray& r);
     Vector3 RayColor(const Ray& r, const Hittable& world, int depth);
     Vector3 SampleSquare();
 

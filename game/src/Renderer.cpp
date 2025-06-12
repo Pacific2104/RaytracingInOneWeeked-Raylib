@@ -124,7 +124,8 @@ Vector4 Renderer::TraceRay(int x, int y)
     Vector3 offset = Vector3Zeros;
 #endif
 
-    Vector2 coord = { ((float)x + offset.x) / (float)m_FinalImage.width, ((float)y + offset.y) / (float)m_FinalImage.height };
+    Vector2 coord = { ((float)x + offset.x) / (float)m_FinalImage.width, 
+        ((float)y + offset.y) / (float)m_FinalImage.height };
     coord = Vector2SubtractValue((coord * 2.0f), 1.0f);  // Converting from  0 -> 1 to -1 -> 1
     coord.x *= m_AspectRatio; //compensating for the aspect ratio
 
@@ -133,25 +134,6 @@ Vector4 Renderer::TraceRay(int x, int y)
 
     Vector3 color = RayColor({ rayOrigin, rayDirection }, world, maxDepth);
     return Vector4{ color.x, color.y,color.z, 1.0f };
-}
-
-Vector3 Renderer::SampleSquare() {
-    return { Utils::RandomFloat() - 0.5f,Utils::RandomFloat() - 0.5f ,0};
-}
-
-float Renderer::HitSphere(const Vector3& center, float radius, const Ray& r)
-{
-    Vector3 oc = center - r.position;
-    auto a = Vector3LengthSqr(r.direction);
-    auto h = Vector3DotProduct(r.direction, oc);
-    auto c = Vector3LengthSqr(oc) - (radius * radius);
-    auto discriminant = h * h - a * c;
-    if (discriminant < 0) {
-        return -1.0;
-    }
-    else {
-        return (h - std::sqrt(discriminant)) / a;
-    }
 }
 
 Vector3 Renderer::RayColor(const Ray& r, const Hittable& world, int depth)
@@ -168,4 +150,8 @@ Vector3 Renderer::RayColor(const Ray& r, const Hittable& world, int depth)
     Vector3 unit_direction = Vector3Normalize(r.direction);
     auto a = 0.5f * (unit_direction.y + 1.0f);
     return  (Vector3Ones * (1.0f - a)) + (Vector3{ 0.5f, 0.7f, 1.0f } * a);
+}
+
+Vector3 Renderer::SampleSquare() {
+    return { Utils::RandomFloat() - 0.5f,Utils::RandomFloat() - 0.5f ,0 };
 }
