@@ -32,9 +32,10 @@ private:
     int m_ScreenHeight;
     float m_AspectRatio;
 
-    int samples = 100;
+    int samples = 10;
     int maxDepth = 10;
-    int threadCount = 2;
+    int threadCount = 1;
     int m_FrameIndex = 1;
     Vector4* m_AccumulationData = nullptr;
+    std::vector<uint32_t> m_ImageHorIter, m_ImageVerIter;
 };

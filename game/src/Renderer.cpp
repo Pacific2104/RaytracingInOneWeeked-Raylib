@@ -1,10 +1,10 @@
 #include "Renderer.h"
 #include "raymath.h"
-#include <thread>
+#include <execution>
 
 #define AA 1;
 #define MT 1;
-#define AC 0;
+#define AC 1;
 
 namespace Utils {
 
@@ -60,6 +60,13 @@ Renderer::Renderer(int threads) :
     m_ScreenHeight = GetScreenHeight();
     m_AspectRatio = (float)m_ScreenWidth / (float)m_ScreenHeight;
 
+    m_ImageHorIter.resize(m_ScreenWidth);
+    m_ImageVerIter.resize(m_ScreenHeight);
+    for (uint32_t i = 0; i < m_ScreenWidth; i++)
+        m_ImageHorIter[i] = i;
+    for (uint32_t i = 0; i < m_ScreenHeight; i++)
+        m_ImageVerIter[i] = i;
+
     m_FinalImage = GenImageColor(m_ScreenWidth, m_ScreenHeight, RAYWHITE);
     m_Texture2D = LoadTextureFromImage(m_FinalImage);
 
@@ -91,6 +98,13 @@ void Renderer::OnResize()
     m_ScreenHeight = GetScreenHeight();
     m_AspectRatio = (float)m_ScreenWidth / (float)m_ScreenHeight;
 
+    m_ImageHorIter.resize(m_ScreenWidth);
+    m_ImageVerIter.resize(m_ScreenHeight);
+    for (uint32_t i = 0; i < m_ScreenWidth; i++)
+        m_ImageHorIter[i] = i;
+    for (uint32_t i = 0; i < m_ScreenHeight; i++)
+        m_ImageVerIter[i] = i;
+
     delete[] m_AccumulationData;
     m_AccumulationData = new Vector4[m_ScreenWidth * m_ScreenHeight];
 
@@ -109,19 +123,14 @@ void Renderer::UpdateTextureBuffer()
         memset(m_AccumulationData, 0, m_ScreenWidth * m_ScreenHeight * sizeof(Vector4));
 
 #if MT
-    std::vector<std::thread> threads;
-    for (int t = 0; t < threadCount; ++t) {
-        threads.emplace_back([=]() {
-            for (uint32_t y = t; y < m_ScreenWidth; y += threadCount) {
-                for (uint32_t x = 0; x < m_ScreenHeight; ++x) {
+    std::for_each(std::execution::par, m_ImageVerIter.begin(), m_ImageVerIter.end(), [this](uint32_t y)
+        {
+            std::for_each(std::execution::par, m_ImageHorIter.begin(), m_ImageHorIter.end(), [this, y](uint32_t x)
+                {
                     Vector4 color = CalculatePixelColor(x, y);
                     ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
-                }
-            }
+                });
         });
-    }
-    for (auto& thread : threads)
-        thread.join();
 #else
     for (int y = 0; y < m_ScreenHeight; y++)
     {
@@ -141,12 +150,16 @@ void Renderer::UpdateTextureBuffer()
 
 Vector4 Renderer::CalculatePixelColor(int x, int y)
 {
-#if AC
-    Vector4 color = TraceRay(x, y);
+#if AC 
+    Vector4 color = Vector4Zero();
+    for (int sample = 0; sample < samples; sample++) {
+        color += TraceRay(x, y);
+    }
+    color *= 1.0f / (float)samples;
     m_AccumulationData[x + y * m_ScreenWidth] += color;
     Vector4 accumulatedColor = m_AccumulationData[x + y * m_ScreenWidth];
-    Vector4 frameVec4 = { (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex };
-    accumulatedColor = accumulatedColor / frameVec4;
+    //Vector4 frameVec4 = { (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex };
+    accumulatedColor = accumulatedColor / m_FrameIndex;
     accumulatedColor = Utils::Vector4Clamp(accumulatedColor, Vector4Zeros, Vector4Ones);
     return accumulatedColor;
 #else
@@ -209,11 +222,11 @@ Vector3 Renderer::RayColor(const Ray& r, const Hittable& world, int depth)
     if (depth <= 0)
         return Vector3{ 0, 0, 0 };
     HitRecord rec;
-    if (world.Hit(r, Interval(0, INFINITY), rec)) {
+    if (world.Hit(r, Interval(0.001f, INFINITY), rec)) {
         Vector3 direction = Utils::RandomOnHemisphere(rec.normal);
         return RayColor(Ray{ rec.p, direction }, world, depth-1) * 0.5f;
 
-        //return (rec.normal + Vector3Ones) * 0.5f;
+        return (rec.normal + Vector3Ones) * 0.5f;
     }
 
     Vector3 unit_direction = Vector3Normalize(r.direction);
