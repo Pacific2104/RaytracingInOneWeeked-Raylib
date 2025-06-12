@@ -1,6 +1,5 @@
 #include "Renderer.h"
 #include "raymath.h"
-#include <execution>
 
 #define AA 1;
 #define AC 1;
@@ -77,6 +76,10 @@ Renderer::Renderer(int samples, int depth) : m_samples(samples), m_maxDepth(dept
 
     world.add(make_shared<Sphere>(Vector3{ 0, 0, -1 }, 0.5));
     world.add(make_shared<Sphere>(Vector3{ 0, -100.5, -1 }, 100));
+
+#if !AA
+    m_samples = 1;
+#endif
 }
 
 void Renderer::ExportRender(const char* name) const
@@ -96,7 +99,7 @@ void Renderer::ExportRender(const char* name) const
 
 void Renderer::Render(int x, int y)
 {
-    Vector4 color = CalculatePixelColor(x, y);
+    Vector4 color = CalculatePixelColor(m_ScreenWidth - x - 1, m_ScreenHeight - y - 1);
     ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
     UpdateTexture(m_Texture2D, m_FinalImage.data);
     DrawTexture(m_Texture2D, 0, 0, WHITE);
