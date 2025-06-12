@@ -143,17 +143,18 @@ Vector4 Renderer::TraceRay(int x, int y)
     Vector3 offset = Vector3Zeros;
 #endif
 
-    Vector2 coord = { ((float)x + offset.x) / (float)m_FinalImage.width, 
+    Vector2 coord = { ((float)x + offset.x) / (float)m_FinalImage.width,
         ((float)y + offset.y) / (float)m_FinalImage.height };
-    coord = Vector2SubtractValue((coord * 2.0f), 1.0f);  // Converting from  0 -> 1 to -1 -> 1
-    coord.y = 1.0f - coord.y;  // Flip vertically (Y) so (0,0) is top-left
-    coord.x *= m_AspectRatio; //compensating for the aspect ratio
+
+    coord.y = 1.0f - coord.y;   // Vertical flip to correct orientation
+    coord = Vector2SubtractValue((coord * 2.0f), 1.0f); // Converting from  0 -> 1 to -1 -> 1
+    coord.x *= m_AspectRatio;   //compensating for the aspect ratio
 
     Vector3 rayOrigin = { 0.0f, 0.0f, 0.0f };
     Vector3 rayDirection = { coord.x, coord.y, -1.0f };
 
     Vector3 color = RayColor({ rayOrigin, rayDirection }, world, m_maxDepth);
-    return Vector4{ color.x, color.y,color.z, 1.0f };
+    return Vector4{ color.x, color.y, color.z, 1.0f };
 }
 
 Vector3 Renderer::RayColor(const Ray& r, const Hittable& world, int depth)

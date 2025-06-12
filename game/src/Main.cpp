@@ -2,10 +2,10 @@
 
 int main(void) 
 {
-    uint32_t screenWidth = 854;
-    uint32_t screenHeight = 480;
-    uint32_t pixelsPerFrame = 150;
-    uint32_t samples = 25;
+    uint32_t screenWidth = 512;
+    uint32_t screenHeight = 512;
+    uint32_t pixelsPerFrame = 200;
+    uint32_t samples = 250;
     uint32_t depth = 5;
 
     uint32_t currentPixel_X = 0;
