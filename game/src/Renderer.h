@@ -32,7 +32,7 @@ private:
     int m_ScreenHeight;
     float m_AspectRatio;
 
-    int samples = 2;
+    int samples = 5;
     int maxDepth = 10;
     int threadCount = 1;
     int m_FrameIndex = 1;
