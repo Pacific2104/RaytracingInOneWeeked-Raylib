@@ -24,10 +24,11 @@ namespace Utils {
         return (word >> 22u) ^ word;
     }
     static float RandomFloat() {
+        // Returns a random real in (0,1).
         return std::rand() / (RAND_MAX + 1.0);
     }
     static float RandomFloat(float min, float max) {
-        // Returns a random real in [min,max).
+        // Returns a random real in (min,max).
         return min + (max - min) * RandomFloat();
     }
     static Vector3 RandomVector3() {
@@ -36,20 +37,8 @@ namespace Utils {
     static Vector3 RandomVector3(float min, float max) {
         return Vector3{ RandomFloat(min, max), RandomFloat(min, max), RandomFloat(min, max) };
     }
-    static Vector3 RandomUnitVector() {
-        while (true) {
-            auto p = RandomVector3(-1, 1);
-            auto lensq = Vector3LengthSqr(p);
-            if (1e-160 < lensq && lensq <= 1)
-                return p / sqrt(lensq);
-        }
-    }
-    static Vector3 RandomOnHemisphere(const Vector3& normal) {
-        Vector3 on_unit_sphere = RandomUnitVector();
-        if (Vector3DotProduct(on_unit_sphere, normal) > 0.0) // In the same hemisphere as the normal
-            return on_unit_sphere;
-        else
-            return Vector3Negate(on_unit_sphere);
+    static Vector3 InUnitSphere(){
+        return Vector3Normalize(RandomVector3(-1, 1));
     }
 }
 
@@ -223,7 +212,7 @@ Vector3 Renderer::RayColor(const Ray& r, const Hittable& world, int depth)
         return Vector3{ 0, 0, 0 };
     HitRecord rec;
     if (world.Hit(r, Interval(0.001f, INFINITY), rec)) {
-        Vector3 direction = Utils::RandomOnHemisphere(rec.normal);
+        Vector3 direction = rec.normal + Utils::InUnitSphere();
         return RayColor(Ray{ rec.p, direction }, world, depth-1) * 0.5f;
 
         return (rec.normal + Vector3Ones) * 0.5f;
