@@ -16,10 +16,11 @@ public:
 
 private:
     void UpdateTextureBuffer();
+    Vector4 CalculatePixelColor(int x, int y);
     Vector4 TraceRay(int x, int y);
     float HitSphere(const Vector3& center, float radius, const Ray& r);
-    Vector3 RayColor(const Ray& r, const Hittable& world);
-    Vector3 SampleSquare(uint32_t seed);
+    Vector3 RayColor(const Ray& r, const Hittable& world, int depth);
+    Vector3 SampleSquare();
 
 private:
     Image m_FinalImage;
@@ -31,6 +32,8 @@ private:
     int m_ScreenHeight;
     float m_AspectRatio;
 
+    int samples = 100;
+    int maxDepth = 10;
     int threadCount = 2;
     int m_FrameIndex = 1;
     Vector4* m_AccumulationData = nullptr;

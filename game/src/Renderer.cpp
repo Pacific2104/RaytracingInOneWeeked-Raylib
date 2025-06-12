@@ -4,6 +4,7 @@
 
 #define AA 1;
 #define MT 1;
+#define AC 0;
 
 namespace Utils {
 
@@ -22,13 +23,33 @@ namespace Utils {
         uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 27703737u;
         return (word >> 22u) ^ word;
     }
-    static float RandomFloat(uint32_t& seed) {
-        seed = PCG_Hash(seed);
-        return (float)seed / (float)std::numeric_limits<uint32_t>::max();
+    static float RandomFloat() {
+        return std::rand() / (RAND_MAX + 1.0);
     }
-    static float RandomFloat(uint32_t& seed, float min, float max) {
+    static float RandomFloat(float min, float max) {
         // Returns a random real in [min,max).
-        return min + (max - min) * RandomFloat(seed);
+        return min + (max - min) * RandomFloat();
+    }
+    static Vector3 RandomVector3() {
+        return Vector3{ RandomFloat(), RandomFloat(), RandomFloat() };
+    }
+    static Vector3 RandomVector3(float min, float max) {
+        return Vector3{ RandomFloat(min, max), RandomFloat(min, max), RandomFloat(min, max) };
+    }
+    static Vector3 RandomUnitVector() {
+        while (true) {
+            auto p = RandomVector3(-1, 1);
+            auto lensq = Vector3LengthSqr(p);
+            if (1e-160 < lensq && lensq <= 1)
+                return p / sqrt(lensq);
+        }
+    }
+    static Vector3 RandomOnHemisphere(const Vector3& normal) {
+        Vector3 on_unit_sphere = RandomUnitVector();
+        if (Vector3DotProduct(on_unit_sphere, normal) > 0.0) // In the same hemisphere as the normal
+            return on_unit_sphere;
+        else
+            return Vector3Negate(on_unit_sphere);
     }
 }
 
@@ -93,15 +114,8 @@ void Renderer::UpdateTextureBuffer()
         threads.emplace_back([=]() {
             for (uint32_t y = t; y < m_ScreenWidth; y += threadCount) {
                 for (uint32_t x = 0; x < m_ScreenHeight; ++x) {
-                    Vector4 color = TraceRay(x, y);
-                    m_AccumulationData[x + y * m_ScreenWidth] += color;
-
-                    Vector4 accumulatedColor = m_AccumulationData[x + y * m_ScreenWidth];
-                    Vector4 frameVec4 = { (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex };
-                    accumulatedColor = accumulatedColor / frameVec4;
-
-                    accumulatedColor = Utils::Vector4Clamp(accumulatedColor, Vector4Zeros, Vector4Ones);
-                    ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(accumulatedColor));
+                    Vector4 color = CalculatePixelColor(x, y);
+                    ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
                 }
             }
         });
@@ -113,15 +127,8 @@ void Renderer::UpdateTextureBuffer()
     {
         for (int x = 0; x < m_ScreenWidth; x++)
         {
-            Vector4 color = TraceRay(x, y);
-            m_AccumulationData[x + y * m_ScreenWidth] += color;
-
-            Vector4 accumulatedColor = m_AccumulationData[x + y * m_ScreenWidth];
-            Vector4 frameVec4 = { (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex };
-            accumulatedColor = accumulatedColor / frameVec4;
-
-            accumulatedColor = Utils::Vector4Clamp(accumulatedColor, Vector4Zeros, Vector4Ones);
-            ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(accumulatedColor));
+            Vector4 color = CalculatePixelColor(x, y);
+            ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
         }
     }
 #endif
@@ -132,6 +139,26 @@ void Renderer::UpdateTextureBuffer()
     m_FrameIndex++;
 }
 
+Vector4 Renderer::CalculatePixelColor(int x, int y)
+{
+#if AC
+    Vector4 color = TraceRay(x, y);
+    m_AccumulationData[x + y * m_ScreenWidth] += color;
+    Vector4 accumulatedColor = m_AccumulationData[x + y * m_ScreenWidth];
+    Vector4 frameVec4 = { (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex, (float)m_FrameIndex };
+    accumulatedColor = accumulatedColor / frameVec4;
+    accumulatedColor = Utils::Vector4Clamp(accumulatedColor, Vector4Zeros, Vector4Ones);
+    return accumulatedColor;
+#else
+    Vector4 color = Vector4Zero();
+    for (int sample = 0; sample < samples; sample++)
+        color += TraceRay(x, y);
+    color *= 1.0f / (float)samples;
+    color = Utils::Vector4Clamp(color, Vector4Zero(), Vector4One());
+    return color;
+#endif
+}
+
 void Renderer::Render()
 {
     UpdateTextureBuffer();
@@ -140,11 +167,8 @@ void Renderer::Render()
 
 Vector4 Renderer::TraceRay(int x, int y)
 {
-    uint32_t seed = x + y * m_FinalImage.width;
-    seed += m_FrameIndex;
-
 #if AA
-    Vector3 offset = SampleSquare(seed);
+    Vector3 offset = SampleSquare();
 #else
     Vector3 offset = Vector3Zeros;
 #endif
@@ -153,15 +177,15 @@ Vector4 Renderer::TraceRay(int x, int y)
     coord = Vector2SubtractValue((coord * 2.0f), 1.0f);  // Converting from  0 -> 1 to -1 -> 1
     coord.x *= m_AspectRatio; //compensating for the aspect ratio
 
-    Vector3 rayOrigin = { 0.0f, 0.0f, 1.0f };
+    Vector3 rayOrigin = { 0.0f, 0.0f, 0.0f };
     Vector3 rayDirection = { coord.x, coord.y, -1.0f };
 
-    Vector3 color = RayColor({ rayOrigin, rayDirection }, world);
+    Vector3 color = RayColor({ rayOrigin, rayDirection }, world, maxDepth);
     return Vector4{ color.x, color.y,color.z, 1.0f };
 }
 
-Vector3 Renderer::SampleSquare(uint32_t seed) {
-    return { Utils::RandomFloat(seed) - 0.5f,Utils::RandomFloat(seed) - 0.5f ,0};
+Vector3 Renderer::SampleSquare() {
+    return { Utils::RandomFloat() - 0.5f,Utils::RandomFloat() - 0.5f ,0};
 }
 
 float Renderer::HitSphere(const Vector3& center, float radius, const Ray& r)
@@ -179,16 +203,17 @@ float Renderer::HitSphere(const Vector3& center, float radius, const Ray& r)
     }
 }
 
-Vector3 Renderer::RayColor(const Ray& r, const Hittable& world)
+Vector3 Renderer::RayColor(const Ray& r, const Hittable& world, int depth)
 {
-    /*auto t = HitSphere(Vector3{ 0.0f, 0.0f, 0.0f }, 0.5f, r);
-    if (t > 0.0) {
-        Vector3 N = Vector3Normalize(Utils::RayHitPos(r, t));
-        return Vector3AddValue(N, 1) * 0.5f;
-    }*/
+    // If we've exceeded the ray bounce limit, no more light is gathered.
+    if (depth <= 0)
+        return Vector3{ 0, 0, 0 };
     HitRecord rec;
     if (world.Hit(r, Interval(0, INFINITY), rec)) {
-        return (rec.normal + Vector3Ones) * 0.5f;
+        Vector3 direction = Utils::RandomOnHemisphere(rec.normal);
+        return RayColor(Ray{ rec.p, direction }, world, depth-1) * 0.5f;
+
+        //return (rec.normal + Vector3Ones) * 0.5f;
     }
 
     Vector3 unit_direction = Vector3Normalize(r.direction);

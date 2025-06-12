@@ -9,7 +9,7 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "raytracing in one weekend");
     //SetWindowState(FLAG_WINDOW_RESIZABLE);
     
-    Renderer renderer(8);
+    Renderer renderer(12);
 
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
