@@ -63,6 +63,22 @@ Renderer::Renderer()
     world.add(make_shared<Sphere>(Vector3{ 0, -100.5, -1 }, 100));
 }
 
+Renderer::Renderer(int samples, int depth) : m_samples(samples), m_maxDepth(depth)
+{
+    m_ScreenWidth = GetScreenWidth();
+    m_ScreenHeight = GetScreenHeight();
+    m_AspectRatio = (float)m_ScreenWidth / (float)m_ScreenHeight;
+
+    m_FinalImage = GenImageColor(m_ScreenWidth, m_ScreenHeight, RAYWHITE);
+    m_Texture2D = LoadTextureFromImage(m_FinalImage);
+
+    delete[] m_AccumulationData;
+    m_AccumulationData = new Vector4[m_ScreenWidth * m_ScreenHeight];
+
+    world.add(make_shared<Sphere>(Vector3{ 0, 0, -1 }, 0.5));
+    world.add(make_shared<Sphere>(Vector3{ 0, -100.5, -1 }, 100));
+}
+
 void Renderer::ExportRender(const char* name) const
 {
     char* directory = "./Renders/";
@@ -96,10 +112,10 @@ Vector4 Renderer::CalculatePixelColor(int x, int y)
 {
     Vector4 color = Vector4Zero();
     Vector4 sampledColor = Vector4Zero();
-    for (int sample = 0; sample < samples; sample++) {
+    for (int sample = 0; sample < m_samples; sample++) {
         sampledColor += TraceRay(x, y);
     }
-    sampledColor *= 1.0f / (float)samples;
+    sampledColor *= 1.0f / (float)m_samples;
 
 #if AC 
     m_AccumulationData[x + y * m_ScreenWidth] += sampledColor;
@@ -132,7 +148,7 @@ Vector4 Renderer::TraceRay(int x, int y)
     Vector3 rayOrigin = { 0.0f, 0.0f, 0.0f };
     Vector3 rayDirection = { coord.x, coord.y, -1.0f };
 
-    Vector3 color = RayColor({ rayOrigin, rayDirection }, world, maxDepth);
+    Vector3 color = RayColor({ rayOrigin, rayDirection }, world, m_maxDepth);
     return Vector4{ color.x, color.y,color.z, 1.0f };
 }
 

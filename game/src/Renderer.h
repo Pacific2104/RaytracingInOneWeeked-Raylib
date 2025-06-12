@@ -8,6 +8,7 @@
 class Renderer {
 public:
     Renderer();
+    Renderer(int samples, int depth);
 
     void Render(int x, int y);
     void UpdateRenderPass(int pass);
@@ -29,8 +30,8 @@ private:
     int m_ScreenHeight;
     float m_AspectRatio;
 
-    int samples = 50;
-    int maxDepth = 5;
+    int m_samples = 50;
+    int m_maxDepth = 5;
 
     int m_FrameIndex = 1;
     Vector4* m_AccumulationData = nullptr;
