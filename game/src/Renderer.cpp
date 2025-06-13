@@ -27,12 +27,14 @@ void Renderer::Initialize() {
 
     auto material_ground = make_shared<Lambertian>(Vector4{ 0.8, 0.8, 0.0, 1.0 });
     auto material_center = make_shared<Lambertian>(Vector4{ 0.1, 0.2, 0.5, 1.0 });
-    auto material_left = make_shared<Metal>(Vector4{ 0.8, 0.8, 0.8, 1.0 }, 0.3);
+    auto material_left = make_shared<Dielectric>(1.5);
+    auto material_bubble = make_shared<Dielectric>(1.0/1.5);
     auto material_right = make_shared<Metal>(Vector4{ 0.8, 0.6, 0.2, 1.0 }, 0.9);
 
     world.add(make_shared<Sphere>(Vector3{ 0.0, -100.5, -1.0}, 100.0, material_ground));
     world.add(make_shared<Sphere>(Vector3{ 0.0, 0.0, -1.2 }, 0.5, material_center));
     world.add(make_shared<Sphere>(Vector3{ -1.0, 0.0, -1.0 }, 0.5, material_left));
+    world.add(make_shared<Sphere>(Vector3{ -1.0, 0.0, -1.0 }, 0.4, material_bubble));
     world.add(make_shared<Sphere>(Vector3{ 1.0, 0.0, -1.0 }, 0.5, material_right));
 
 #if !AA
@@ -112,7 +114,7 @@ Vector4 Renderer::TraceRay(int x, int y)
     coord = Vector2SubtractValue((coord * 2.0f), 1.0f); // Converting from  0 -> 1 to -1 -> 1
     coord.x *= m_AspectRatio;   //compensating for the aspect ratio
 
-    Vector3 rayOrigin = { 0.0f, 0.0f, 0.0f };
+    Vector3 rayOrigin = { 0.0f, 0.0f, 1.0f };
     Vector3 rayDirection = { coord.x, coord.y, -1.0f };
 
     return RayColor({ rayOrigin, rayDirection }, world, m_maxDepth);

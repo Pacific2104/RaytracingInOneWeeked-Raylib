@@ -5,9 +5,9 @@ int main(void)
 {
     uint32_t screenWidth = 600;
     uint32_t screenHeight = 400;
-    uint32_t pixelsPerFrame = 100;
-    uint32_t samples = 100;
-    uint32_t depth = 5;
+    uint32_t pixelsPerFrame = 200;
+    uint32_t samples = 50;
+    uint32_t depth = 15;
 
     uint32_t currentPixel_X = 0;
     uint32_t currentPixel_Y = 0;
