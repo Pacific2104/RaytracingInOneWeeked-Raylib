@@ -15,6 +15,7 @@ public:
     void ExportRender(const char* name) const;
 
 private:
+    void Initialize();
     Vector4 CalculatePixelColor(int x, int y);
     Vector4 TraceRay(int x, int y);
     Vector3 RayColor(const Ray& r, const Hittable& world, int depth);

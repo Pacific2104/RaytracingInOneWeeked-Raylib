@@ -48,22 +48,14 @@ namespace Utils {
 
 Renderer::Renderer()
 {
-    m_ScreenWidth = GetScreenWidth();
-    m_ScreenHeight = GetScreenHeight();
-    m_AspectRatio = (float)m_ScreenWidth / (float)m_ScreenHeight;
-
-    m_FinalImage = GenImageColor(m_ScreenWidth, m_ScreenHeight, RAYWHITE);
-    m_Texture2D = LoadTextureFromImage(m_FinalImage);
-
-    delete[] m_AccumulationData;
-    m_AccumulationData = new Vector4[m_ScreenWidth * m_ScreenHeight];
-
-    world.add(make_shared<Sphere>(Vector3{ 0, 0, -1 }, 0.5));
-    world.add(make_shared<Sphere>(Vector3{ 0, -100.5, -1 }, 100));
+    Initialize();
 }
 
 Renderer::Renderer(int samples, int depth) : m_samples(samples), m_maxDepth(depth)
 {
+    Initialize();
+}
+void Renderer::Initialize() {
     m_ScreenWidth = GetScreenWidth();
     m_ScreenHeight = GetScreenHeight();
     m_AspectRatio = (float)m_ScreenWidth / (float)m_ScreenHeight;
