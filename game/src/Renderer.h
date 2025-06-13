@@ -3,11 +3,11 @@
 #include "Hittable.h"
 #include "HittableList.h"
 #include "Sphere.h"
+#include "CustomCamera.h"
 
 class Renderer {
 public:
-    Renderer();
-    Renderer(int samples, int depth);
+    Renderer(int samples, int depth, const CustomCamera& camera);
 
     void Render(int x, int y);
     void UpdateRenderPass(int pass);
@@ -16,8 +16,7 @@ public:
 private:
     void Initialize();
     Vector4 CalculatePixelColor(int x, int y);
-    Vector4 TraceRay(int x, int y);
-    Vector4 RayColor(const Ray& r, const Hittable& world, int depth);
+    Vector4 RayColor(const Ray& r, int depth);
     Vector2 SampleSquare();
 
 private:
@@ -25,6 +24,7 @@ private:
     Texture2D m_Texture2D;
 
     HittableList world;
+    const CustomCamera* m_camera = nullptr;
 
     int m_ScreenWidth;
     int m_ScreenHeight;

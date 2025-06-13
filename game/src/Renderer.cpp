@@ -2,15 +2,12 @@
 #include "Utils.h"
 #include "Material.h"
 
-#define AA 1;
 #define AC 1;
 
-Renderer::Renderer()
-{
-    Initialize();
-}
-
-Renderer::Renderer(int samples, int depth) : m_samples(samples), m_maxDepth(depth)
+Renderer::Renderer(int samples, int depth, const CustomCamera& camera) :
+    m_samples(samples),
+    m_maxDepth(depth),
+    m_camera(&camera)
 {
     Initialize();
 }
@@ -36,10 +33,6 @@ void Renderer::Initialize() {
     world.add(make_shared<Sphere>(Vector3{ -1.0, 0.0, -1.0 }, 0.5, material_left));
     world.add(make_shared<Sphere>(Vector3{ -1.0, 0.0, -1.0 }, 0.4, material_bubble));
     world.add(make_shared<Sphere>(Vector3{ 1.0, 0.0, -1.0 }, 0.5, material_right));
-
-#if !AA
-    m_samples = 1;
-#endif
 }
 
 void Renderer::ExportRender(const char* name) const
@@ -80,7 +73,7 @@ Vector4 Renderer::CalculatePixelColor(int x, int y)
     Vector4 color = Vector4Zero();
     Vector4 sampledColor = Vector4Zero();
     for (int sample = 0; sample < m_samples; sample++) {
-        sampledColor += TraceRay(x, y);
+        sampledColor += RayColor(m_camera->GetRay(x, y),  m_maxDepth);
     }
     sampledColor *= 1.0f / (float)m_samples;
 
@@ -99,28 +92,7 @@ Vector4 Renderer::CalculatePixelColor(int x, int y)
     return color;
 }
 
-Vector4 Renderer::TraceRay(int x, int y)
-{
-#if AA
-    Vector2 offset = SampleSquare();
-#else
-    Vector2 offset = Vector3Zeros;
-#endif
-
-    Vector2 coord = { ((float)x + offset.x) / (float)m_FinalImage.width,
-        ((float)y + offset.y) / (float)m_FinalImage.height };
-
-    coord.y = 1.0f - coord.y;   // Vertical flip to correct orientation
-    coord = Vector2SubtractValue((coord * 2.0f), 1.0f); // Converting from  0 -> 1 to -1 -> 1
-    coord.x *= m_AspectRatio;   //compensating for the aspect ratio
-
-    Vector3 rayOrigin = { 0.0f, 0.0f, 1.0f };
-    Vector3 rayDirection = { coord.x, coord.y, -1.0f };
-
-    return RayColor({ rayOrigin, rayDirection }, world, m_maxDepth);
-}
-
-Vector4 Renderer::RayColor(const Ray& r, const Hittable& world, int depth)
+Vector4 Renderer::RayColor(const Ray& r, int depth)
 {
     // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0)
@@ -130,7 +102,7 @@ Vector4 Renderer::RayColor(const Ray& r, const Hittable& world, int depth)
         Ray scattered;
         Vector4 attenuation;
         if (rec.mat->Scatter(r, rec, attenuation, scattered))
-            return RayColor(scattered, world, depth - 1) * attenuation;
+            return RayColor(scattered, depth - 1) * attenuation;
         return Vector4{ 0, 0, 0, 1 };
     }
 

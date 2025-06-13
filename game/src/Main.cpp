@@ -1,13 +1,14 @@
 #include "Renderer.h"
+#include "CustomCamera.h"
 #include <iostream>
 
 int main(void) 
 {
     uint32_t screenWidth = 600;
     uint32_t screenHeight = 400;
-    uint32_t pixelsPerFrame = 200;
-    uint32_t samples = 50;
-    uint32_t depth = 15;
+    uint32_t pixelsPerFrame = 250;
+    uint32_t samples = 100;
+    uint32_t depth = 10;
 
     uint32_t currentPixel_X = 0;
     uint32_t currentPixel_Y = 0;
@@ -17,7 +18,9 @@ int main(void)
 
     InitWindow(screenWidth, screenHeight, "raytracing in one weekend");
 
-    Renderer renderer(samples, depth);
+    CustomCamera camera;
+
+    Renderer renderer(samples, depth, camera);
     renderer.UpdateRenderPass(pass);
 
     std::cout <<
