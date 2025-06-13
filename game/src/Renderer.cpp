@@ -1,6 +1,7 @@
 #include "Renderer.h"
 #include "Utils.h"
 #include "Material.h"
+#include <iostream>
 
 #define AC 1;
 
@@ -22,17 +23,45 @@ void Renderer::Initialize() {
     delete[] m_AccumulationData;
     m_AccumulationData = new Vector4[m_ScreenWidth * m_ScreenHeight];
 
-    auto material_ground = make_shared<Lambertian>(Vector4{ 0.8, 0.8, 0.0, 1.0 });
-    auto material_center = make_shared<Lambertian>(Vector4{ 0.1, 0.2, 0.5, 1.0 });
-    auto material_left = make_shared<Dielectric>(1.5);
-    auto material_bubble = make_shared<Dielectric>(1.0/1.5);
-    auto material_right = make_shared<Metal>(Vector4{ 0.8, 0.6, 0.2, 1.0 }, 0.9);
+    auto ground_material = make_shared<Lambertian>(Vector4{ 0.5, 0.5, 0.5, 1.0 });
+    world.add(make_shared<Sphere>(Vector3{ 0, -1000, 0 }, 1000, ground_material));
 
-    world.add(make_shared<Sphere>(Vector3{ 0.0, -100.5, -1.0}, 100.0, material_ground));
-    world.add(make_shared<Sphere>(Vector3{ 0.0, 0.0, -1.2 }, 0.5, material_center));
-    world.add(make_shared<Sphere>(Vector3{ -1.0, 0.0, -1.0 }, 0.5, material_left));
-    world.add(make_shared<Sphere>(Vector3{ -1.0, 0.0, -1.0 }, 0.4, material_bubble));
-    world.add(make_shared<Sphere>(Vector3{ 1.0, 0.0, -1.0 }, 0.5, material_right));
+    auto material1 = make_shared<Dielectric>(1.5);
+    world.add(make_shared<Sphere>(Vector3{ 0, 1, 0 }, 1.0, material1));
+
+    auto material2 = make_shared<Lambertian>(Vector4{ 0.4, 0.2, 0.1, 1.0 });
+    world.add(make_shared<Sphere>(Vector3{ -4, 1, 0 }, 1.0, material2));
+
+    auto material3 = make_shared<Metal>(Vector4{ 0.7, 0.6, 0.5, 1.0 }, 0.0);
+    world.add(make_shared<Sphere>(Vector3{ 4, 1, 0 }, 1.0, material3));
+
+    for (int a = -11; a < 11; a++) {
+        for (int b = -11; b < 11; b++) {
+            auto choose_mat = RandomFloat();
+            Vector3 center{ a + 0.9 * RandomFloat(), 0.2, b + 0.9 * RandomFloat() };
+
+            if (Vector3Length((center - Vector3{ 4, 0.2, 0 })) > 0.9) {
+                if (choose_mat < 0.8) {
+                    // diffuse
+                    Vector4 albedo = { RandomFloat(),RandomFloat(), RandomFloat(), 1.0 };
+                    auto sphere_material = make_shared<Lambertian>(albedo);
+                    world.add(make_shared<Sphere>(center, 0.2, sphere_material));
+                }
+                else if (choose_mat < 0.95) {
+                    // Metal
+                    Vector4 albedo = { RandomFloat(0.5, 1),RandomFloat(0.5, 1), RandomFloat(0.5, 1), 1.0 };
+                    auto fuzz = RandomFloat(0, 0.5);
+                    auto sphere_material = make_shared<Metal>(albedo, fuzz);
+                    world.add(make_shared<Sphere>(center, 0.2, sphere_material));
+                }
+                else {
+                    // glass
+                    auto sphere_material = make_shared<Dielectric>(1.5);
+                    world.add(make_shared<Sphere>(center, 0.2, sphere_material));
+                }
+            }
+        }
+    }
 }
 
 void Renderer::ExportRender(const char* name) const

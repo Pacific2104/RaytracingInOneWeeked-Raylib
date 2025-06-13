@@ -7,12 +7,12 @@ class CustomCamera
 {
 public:
     double vfov = 20;    // Vertical view angle (field of view)
-    Vector3 lookFrom = { -2, 2, 1 };   // Point camera is looking from
-    Vector3 lookAt = { 0, 0, -1 };   // Point camera is looking at
+    Vector3 lookFrom = { 13, 2, 3 };   // Point camera is looking from
+    Vector3 lookAt = { 0, 0, 0 };   // Point camera is looking at
     Vector3 vUp = {0, 1, 0};   // Camera-relative "up" direction
 
-    double defocus_angle = 10;  // Variation angle of rays through each pixel
-    double focus_dist = 3.5;    // Distance from camera lookfrom point to plane of perfect focus
+    double defocus_angle = 0.6;  // Variation angle of rays through each pixel
+    double focus_dist = 10;    // Distance from camera lookfrom point to plane of perfect focus
 
 public:
     CustomCamera() {

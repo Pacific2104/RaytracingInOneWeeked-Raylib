@@ -4,11 +4,11 @@
 
 int main(void) 
 {
-    uint32_t screenWidth = 600;
-    uint32_t screenHeight = 400;
-    uint32_t pixelsPerFrame = 250;
+    uint32_t screenWidth = 200;
+    uint32_t screenHeight = 200;
+    uint32_t pixelsPerFrame = 5;
     uint32_t samples = 100;
-    uint32_t depth = 10;
+    uint32_t depth = 50;
 
     uint32_t currentPixel_X = 0;
     uint32_t currentPixel_Y = 0;
@@ -25,7 +25,7 @@ int main(void)
 
     std::cout <<
         "\nSTATS" <<
-        "\nResolution: " << screenHeight << " X " << screenWidth <<
+        "\nResolution: " << screenWidth << " X " << screenHeight <<
         "\nSamples: " << samples <<
         "\ndepth: " << depth <<
         "\nPixel Per Frame: " << pixelsPerFrame << std::endl;
