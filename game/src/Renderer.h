@@ -4,12 +4,13 @@
 #include "HittableList.h"
 #include "Sphere.h"
 #include "CustomCamera.h"
+#include <iostream>
 
 class Renderer {
 public:
     Renderer(int samples, int depth, const CustomCamera& camera);
 
-    void Render(int x, int y);
+    void Render();
     void UpdateRenderPass(int pass);
     void ExportRender(const char* name) const;
 
@@ -35,4 +36,5 @@ private:
 
     int m_FrameIndex = 1;
     Vector4* m_AccumulationData = nullptr;
+    std::vector<uint32_t> m_ImageHorIter, m_ImageVerIter;
 };

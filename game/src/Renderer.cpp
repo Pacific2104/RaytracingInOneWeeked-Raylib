@@ -1,7 +1,7 @@
 #include "Renderer.h"
 #include "Utils.h"
 #include "Material.h"
-#include <iostream>
+#include <execution>
 
 #define AC 1;
 
@@ -16,6 +16,13 @@ void Renderer::Initialize() {
     m_ScreenWidth = GetScreenWidth();
     m_ScreenHeight = GetScreenHeight();
     m_AspectRatio = (float)m_ScreenWidth / (float)m_ScreenHeight;
+
+    m_ImageHorIter.resize(m_ScreenWidth);
+    m_ImageVerIter.resize(m_ScreenHeight);
+    for (uint32_t i = 0; i < m_ScreenWidth; i++)
+        m_ImageHorIter[i] = i;
+    for (uint32_t i = 0; i < m_ScreenHeight; i++)
+        m_ImageVerIter[i] = i;
 
     m_FinalImage = GenImageColor(m_ScreenWidth, m_ScreenHeight, RAYWHITE);
     m_Texture2D = LoadTextureFromImage(m_FinalImage);
@@ -79,14 +86,20 @@ void Renderer::ExportRender(const char* name) const
     UnloadImage(renderImage);
 }
 
-void Renderer::Render(int x, int y)
+void Renderer::Render()
 {
     /*{
         int ly = (y+1) % m_ScreenHeight;
         ImageDrawLine(&m_FinalImage, 0, ly, m_ScreenWidth, ly, RED);
     }*/
-    Vector4 color = CalculatePixelColor(x, y);
-    ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
+    std::for_each(std::execution::par, m_ImageVerIter.begin(), m_ImageVerIter.end(), [this](uint32_t y)
+        {
+            std::for_each(std::execution::par, m_ImageHorIter.begin(), m_ImageHorIter.end(), [this, y](uint32_t x)
+                {
+                    Vector4 color = CalculatePixelColor(x, y);
+                    ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
+                });
+        });
     UpdateTexture(m_Texture2D, m_FinalImage.data);
     DrawTexture(m_Texture2D, 0, 0, WHITE);
 }
