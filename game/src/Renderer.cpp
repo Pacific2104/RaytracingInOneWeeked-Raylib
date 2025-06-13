@@ -3,8 +3,6 @@
 #include "Material.h"
 #include <execution>
 
-#define AC 1;
-
 Renderer::Renderer(int samples, int depth, const CustomCamera& camera) :
     m_samples(samples),
     m_maxDepth(depth),
@@ -85,13 +83,17 @@ void Renderer::ExportRender(const char* name) const
     ExportImage(renderImage, t);
     UnloadImage(renderImage);
 }
-
-void Renderer::Render()
+void Renderer::Render(int x, int y)
 {
-    /*{
-        int ly = (y+1) % m_ScreenHeight;
-        ImageDrawLine(&m_FinalImage, 0, ly, m_ScreenWidth, ly, RED);
-    }*/
+    Vector4 color = CalculatePixelColor(x, y);
+    ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
+
+    UpdateTexture(m_Texture2D, m_FinalImage.data);
+    DrawTexture(m_Texture2D, 0, 0, WHITE);
+}
+
+void Renderer::RenderMT()
+{
     std::for_each(std::execution::par, m_ImageVerIter.begin(), m_ImageVerIter.end(), [this](uint32_t y)
         {
             std::for_each(std::execution::par, m_ImageHorIter.begin(), m_ImageHorIter.end(), [this, y](uint32_t x)
@@ -103,6 +105,7 @@ void Renderer::Render()
     UpdateTexture(m_Texture2D, m_FinalImage.data);
     DrawTexture(m_Texture2D, 0, 0, WHITE);
 }
+
 void Renderer::UpdateRenderPass(int pass)
 {
     m_FrameIndex = pass;
@@ -119,13 +122,9 @@ Vector4 Renderer::CalculatePixelColor(int x, int y)
     }
     sampledColor *= 1.0f / (float)m_samples;
 
-#if AC 
     m_AccumulationData[x + y * m_ScreenWidth] += sampledColor;
     color = m_AccumulationData[x + y * m_ScreenWidth];
     color = color / m_FrameIndex;
-#else
-    color = sampledColor;
-#endif
 
     color = Vector4Clamp(color, Vector4Zero(), Vector4One());
     color.x = LinearToGamma(color.x);
@@ -151,8 +150,4 @@ Vector4 Renderer::RayColor(const Ray& r, int depth)
     Vector3 unit_direction = Vector3Normalize(r.direction);
     auto a = 0.5f * (unit_direction.y + 1.0f);
     return  (Vector4Ones * (1.0f - a)) + (Vector4{ 0.5f, 0.7f, 1.0f, 1.0f } * a);
-}
-
-Vector2 Renderer::SampleSquare() {
-    return { RandomFloat() - 0.5f, RandomFloat() - 0.5f };
 }

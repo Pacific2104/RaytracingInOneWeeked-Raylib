@@ -2,6 +2,8 @@
 #include "CustomCamera.h"
 #include <iostream>
 
+#define MT 0
+
 int main(void) 
 {
     uint32_t screenWidth = 1280;
@@ -34,9 +36,10 @@ int main(void)
     {
         BeginDrawing();
         ClearBackground(GetColor(0x0f0f0fff));
-        renderer.Render();
-
-        /*for (uint32_t i = 0; i < pixelsPerFrame; ++i) {
+#if MT
+        renderer.RenderMT();
+#else
+        for (uint32_t i = 0; i < pixelsPerFrame; ++i) {
             renderer.Render(currentPixel_X, currentPixel_Y);
             if (++currentPixel_X >= screenWidth) {
                 currentPixel_X = 0;
@@ -50,12 +53,10 @@ int main(void)
                     renderer.UpdateRenderPass(++pass);
                 }
             }
-        }*/
+        }
         renderTime += GetFrameTime();
-        std::cout << "\nrendered in: " << renderTime << " seconds" << std::endl;
-        renderer.ExportRender("Render.png");
-        renderTime = 0.0f;
-        //DrawFPS(GetScreenWidth() - 100, 15);
+        DrawFPS(GetScreenWidth() - 100, 15);
+#endif
         EndDrawing();
         if (IsKeyPressed(KEY_A)) {
             renderer.ExportRender("Render.png");

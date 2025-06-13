@@ -10,7 +10,8 @@ class Renderer {
 public:
     Renderer(int samples, int depth, const CustomCamera& camera);
 
-    void Render();
+    void Render(int x, int y);
+    void RenderMT();
     void UpdateRenderPass(int pass);
     void ExportRender(const char* name) const;
 
@@ -18,7 +19,6 @@ private:
     void Initialize();
     Vector4 CalculatePixelColor(int x, int y);
     Vector4 RayColor(const Ray& r, int depth);
-    Vector2 SampleSquare();
 
 private:
     Image m_FinalImage;
