@@ -1,6 +1,5 @@
 #pragma once
 #include "raylib.h"
-#include <iostream>
 #include "Hittable.h"
 #include "HittableList.h"
 #include "Sphere.h"

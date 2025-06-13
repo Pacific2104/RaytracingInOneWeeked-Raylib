@@ -1,50 +1,8 @@
 #include "Renderer.h"
-#include "raymath.h"
+#include "Utils.h"
 
 #define AA 1;
 #define AC 1;
-
-namespace Utils {
-
-    static Vector4 Vector4Clamp(const Vector4& vector, Vector4 min, Vector4 max) {
-        Vector4 result = { 0.0f };
-
-        result.x = fminf(max.x, fmaxf(min.x, vector.x));
-        result.y = fminf(max.y, fmaxf(min.y, vector.y));
-        result.z = fminf(max.z, fmaxf(min.z, vector.z));
-        result.w = fminf(max.w, fmaxf(min.w, vector.w));
-
-        return result;
-    }
-    static uint32_t PCG_Hash(uint32_t input) {
-        uint32_t state = input * 747796405u + 2891336453u;
-        uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 27703737u;
-        return (word >> 22u) ^ word;
-    }
-    static float RandomFloat() {
-        // Returns a random real in (0,1).
-        return std::rand() / (RAND_MAX + 1.0);
-    }
-    static float RandomFloat(float min, float max) {
-        // Returns a random real in (min,max).
-        return min + (max - min) * RandomFloat();
-    }
-    static Vector3 RandomVector3() {
-        return Vector3{ RandomFloat(), RandomFloat(), RandomFloat() };
-    }
-    static Vector3 RandomVector3(float min, float max) {
-        return Vector3{ RandomFloat(min, max), RandomFloat(min, max), RandomFloat(min, max) };
-    }
-    static Vector3 InUnitSphere(){
-        return Vector3Normalize(RandomVector3(-1, 1));
-    }
-    static float LinearToGamma(float linearComponent)
-    {
-        if (linearComponent > 0)
-            return std::sqrt(linearComponent);
-        return 0;
-    }
-}
 
 Renderer::Renderer()
 {
@@ -120,10 +78,10 @@ Vector4 Renderer::CalculatePixelColor(int x, int y)
     color = sampledColor;
 #endif
 
-    color = Utils::Vector4Clamp(color, Vector4Zero(), Vector4One());
-    color.x = Utils::LinearToGamma(color.x);
-    color.y = Utils::LinearToGamma(color.y);
-    color.z = Utils::LinearToGamma(color.z);
+    color = Vector4Clamp(color, Vector4Zero(), Vector4One());
+    color.x = LinearToGamma(color.x);
+    color.y = LinearToGamma(color.y);
+    color.z = LinearToGamma(color.z);
     return color;
 }
 
@@ -156,7 +114,7 @@ Vector3 Renderer::RayColor(const Ray& r, const Hittable& world, int depth)
         return Vector3{ 0, 0, 0 };
     HitRecord rec;
     if (world.Hit(r, Interval(0.001f, INFINITY), rec)) {
-        Vector3 direction = rec.normal + Utils::InUnitSphere();
+        Vector3 direction = rec.normal + InUnitSphere();
         return RayColor(Ray{ rec.p, direction }, world, depth-1) * 0.5f;
     }
 
@@ -166,5 +124,5 @@ Vector3 Renderer::RayColor(const Ray& r, const Hittable& world, int depth)
 }
 
 Vector3 Renderer::SampleSquare() {
-    return { Utils::RandomFloat() - 0.5f,Utils::RandomFloat() - 0.5f ,0 };
+    return { RandomFloat() - 0.5f, RandomFloat() - 0.5f ,0 };
 }
