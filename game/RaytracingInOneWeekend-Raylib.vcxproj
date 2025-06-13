@@ -268,8 +268,10 @@
     <ClInclude Include="src\Hittable.h" />
     <ClInclude Include="src\HittableList.h" />
     <ClInclude Include="src\Interval.h" />
+    <ClInclude Include="src\Material.h" />
     <ClInclude Include="src\Renderer.h" />
     <ClInclude Include="src\Sphere.h" />
+    <ClInclude Include="src\Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Interval.cpp" />

@@ -34,6 +34,11 @@ inline Vector3 RandomVector3(float min, float max) {
 inline Vector3 InUnitSphere() {
     return Vector3Normalize(RandomVector3(-1, 1));
 }
+inline bool NearZero(Vector3 e) {
+    // Return true if the vector is close to zero in all dimensions.
+    auto s = 1e-8;
+    return (std::fabs(e.x)< s) && (std::fabs(e.y) < s) && (std::fabs(e.z) < s);
+}
 inline float LinearToGamma(float linearComponent)
 {
     if (linearComponent > 0)

@@ -1,5 +1,6 @@
 #include "Renderer.h"
 #include "Utils.h"
+#include "Material.h"
 
 #define AA 1;
 #define AC 1;
@@ -24,8 +25,15 @@ void Renderer::Initialize() {
     delete[] m_AccumulationData;
     m_AccumulationData = new Vector4[m_ScreenWidth * m_ScreenHeight];
 
-    world.add(make_shared<Sphere>(Vector3{ 0, 0, -1 }, 0.5));
-    world.add(make_shared<Sphere>(Vector3{ 0, -100.5, -1 }, 100));
+    auto material_ground = make_shared<Lambertian>(Vector4{ 0.8, 0.8, 0.0, 1.0 });
+    auto material_center = make_shared<Lambertian>(Vector4{ 0.1, 0.2, 0.5, 1.0 });
+    auto material_left = make_shared<Metal>(Vector4{ 0.8, 0.8, 0.8, 1.0 }, 0.3);
+    auto material_right = make_shared<Metal>(Vector4{ 0.8, 0.6, 0.2, 1.0 }, 0.9);
+
+    world.add(make_shared<Sphere>(Vector3{ 0.0, -100.5, -1.0}, 100.0, material_ground));
+    world.add(make_shared<Sphere>(Vector3{ 0.0, 0.0, -1.2 }, 0.5, material_center));
+    world.add(make_shared<Sphere>(Vector3{ -1.0, 0.0, -1.0 }, 0.5, material_left));
+    world.add(make_shared<Sphere>(Vector3{ 1.0, 0.0, -1.0 }, 0.5, material_right));
 
 #if !AA
     m_samples = 1;
@@ -49,6 +57,10 @@ void Renderer::ExportRender(const char* name) const
 
 void Renderer::Render(int x, int y)
 {
+    /*{
+        int ly = (y+1) % m_ScreenHeight;
+        ImageDrawLine(&m_FinalImage, 0, ly, m_ScreenWidth, ly, RED);
+    }*/
     Vector4 color = CalculatePixelColor(x, y);
     ImageDrawPixel(&m_FinalImage, x, y, ColorFromNormalized(color));
     UpdateTexture(m_Texture2D, m_FinalImage.data);
@@ -88,9 +100,9 @@ Vector4 Renderer::CalculatePixelColor(int x, int y)
 Vector4 Renderer::TraceRay(int x, int y)
 {
 #if AA
-    Vector3 offset = SampleSquare();
+    Vector2 offset = SampleSquare();
 #else
-    Vector3 offset = Vector3Zeros;
+    Vector2 offset = Vector3Zeros;
 #endif
 
     Vector2 coord = { ((float)x + offset.x) / (float)m_FinalImage.width,
@@ -103,26 +115,28 @@ Vector4 Renderer::TraceRay(int x, int y)
     Vector3 rayOrigin = { 0.0f, 0.0f, 0.0f };
     Vector3 rayDirection = { coord.x, coord.y, -1.0f };
 
-    Vector3 color = RayColor({ rayOrigin, rayDirection }, world, m_maxDepth);
-    return Vector4{ color.x, color.y, color.z, 1.0f };
+    return RayColor({ rayOrigin, rayDirection }, world, m_maxDepth);
 }
 
-Vector3 Renderer::RayColor(const Ray& r, const Hittable& world, int depth)
+Vector4 Renderer::RayColor(const Ray& r, const Hittable& world, int depth)
 {
     // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0)
-        return Vector3{ 0, 0, 0 };
+        return Vector4{ 0, 0, 0, 1};
     HitRecord rec;
     if (world.Hit(r, Interval(0.001f, INFINITY), rec)) {
-        Vector3 direction = rec.normal + InUnitSphere();
-        return RayColor(Ray{ rec.p, direction }, world, depth-1) * 0.5f;
+        Ray scattered;
+        Vector4 attenuation;
+        if (rec.mat->Scatter(r, rec, attenuation, scattered))
+            return RayColor(scattered, world, depth - 1) * attenuation;
+        return Vector4{ 0, 0, 0, 1 };
     }
 
     Vector3 unit_direction = Vector3Normalize(r.direction);
     auto a = 0.5f * (unit_direction.y + 1.0f);
-    return  (Vector3Ones * (1.0f - a)) + (Vector3{ 0.5f, 0.7f, 1.0f } * a);
+    return  (Vector4Ones * (1.0f - a)) + (Vector4{ 0.5f, 0.7f, 1.0f, 1.0f } * a);
 }
 
-Vector3 Renderer::SampleSquare() {
-    return { RandomFloat() - 0.5f, RandomFloat() - 0.5f ,0 };
+Vector2 Renderer::SampleSquare() {
+    return { RandomFloat() - 0.5f, RandomFloat() - 0.5f };
 }

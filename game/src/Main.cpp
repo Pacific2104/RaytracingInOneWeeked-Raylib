@@ -1,11 +1,12 @@
 #include "Renderer.h"
+#include <iostream>
 
 int main(void) 
 {
-    uint32_t screenWidth = 512;
-    uint32_t screenHeight = 512;
-    uint32_t pixelsPerFrame = 200;
-    uint32_t samples = 250;
+    uint32_t screenWidth = 600;
+    uint32_t screenHeight = 400;
+    uint32_t pixelsPerFrame = 100;
+    uint32_t samples = 100;
     uint32_t depth = 5;
 
     uint32_t currentPixel_X = 0;
@@ -20,7 +21,7 @@ int main(void)
     renderer.UpdateRenderPass(pass);
 
     std::cout <<
-        "\n STATS" <<
+        "\nSTATS" <<
         "\nResolution: " << screenHeight << " X " << screenWidth <<
         "\nSamples: " << samples <<
         "\ndepth: " << depth <<

@@ -2,6 +2,9 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "Interval.h"
+#include <iostream>
+
+class Mat;
 
 class HitRecord {
 public:
@@ -9,6 +12,7 @@ public:
     Vector3 normal;
     float t;
     bool front_face;
+    std::shared_ptr<Mat> mat;
 
     void SetFaceNormal(const Ray& r, const Vector3& outward_normal) {
         // Sets the hit record normal vector.

@@ -17,8 +17,8 @@ private:
     void Initialize();
     Vector4 CalculatePixelColor(int x, int y);
     Vector4 TraceRay(int x, int y);
-    Vector3 RayColor(const Ray& r, const Hittable& world, int depth);
-    Vector3 SampleSquare();
+    Vector4 RayColor(const Ray& r, const Hittable& world, int depth);
+    Vector2 SampleSquare();
 
 private:
     Image m_FinalImage;
