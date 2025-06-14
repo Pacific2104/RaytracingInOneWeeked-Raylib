@@ -7,8 +7,8 @@
 
 int main(void) 
 {
-    uint32_t screenWidth = 280;
-    uint32_t screenHeight = 220;
+    uint32_t screenWidth = 1280;
+    uint32_t screenHeight = 720;
     uint32_t pixelsPerFrame = 100;
     uint32_t samples = 100;
     uint32_t depth = 25;
