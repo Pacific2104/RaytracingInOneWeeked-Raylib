@@ -1,3 +1,15 @@
+# Raytracer
+Raytracer in Raylib and special thanks to https://raytracing.github.io/
+
+There are options for multithreading (It takes up all the threads avalible rn, might work in it later) and batch pixel render.
+I ustilized multipass system for even cleaner and less noisy renders, the final render is after 4 passes.
+
+![Early Render](/Renders/Render_NoAA.png)
+![Lambertian](/Renders/Render_Lambertian.png)
+![Gamma Fix](/Renders/Render_Gamma.png)
+![Final Render](/Renders/Render_pass4.png)
+
+
 # Raylib Setup using Premake5
 This is a simplified set of instructions for how to setup a project using premake.
 

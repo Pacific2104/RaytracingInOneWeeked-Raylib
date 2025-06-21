@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstdio>
 
-#define MT 1
+#define MT 0
 
 int main(void) 
 {
@@ -36,19 +36,19 @@ int main(void)
 #if MT
         renderer.RenderMT();
         renderTime = GetFrameTime();
+        renderer.UpdateRenderPass(++pass);
         snprintf(buffer, sizeof(buffer), "Sample: %d\nDepth: %d\nPass: %d\nrendered in: %.2f seconds", samples, depth, pass, renderTime);
         DrawText(buffer, 10, 10, 10, RED);
-        renderer.UpdateRenderPass(++pass);
 #else
         for (uint32_t i = 0; i < pixelsPerFrame; ++i) {
             renderer.Render(currentPixel_X, currentPixel_Y);
             if (++currentPixel_X >= screenWidth) {
                 currentPixel_X = 0;
                 if (++currentPixel_Y >= screenHeight) {
+                    renderer.UpdateRenderPass(++pass);
                     snprintf(buffer, sizeof(buffer), "Sample: %d\nDepth: %d\nPass: %d\nrendered in: %.2f seconds",samples, depth, pass, renderTime);
                     renderTime = 0.0f;
                     currentPixel_Y = 0;
-                    renderer.UpdateRenderPass(++pass);
                 }
             }
         }
