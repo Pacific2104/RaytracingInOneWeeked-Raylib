@@ -71,7 +71,7 @@ void Renderer::Initialize() {
 
 void Renderer::ExportRender(const char* name) const
 {
-    char* directory = "./Renders/";
+    const char* directory = "./Renders/";
     if (!DirectoryExists(directory)) {
         MakeDirectory(directory);
     }

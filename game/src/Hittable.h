@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "Interval.h"
+#include "AABB.h"
 #include <iostream>
 
 class Mat;
@@ -28,4 +29,6 @@ public:
     virtual ~Hittable() = default;
 
     virtual bool Hit(const Ray& r, Interval rayT, HitRecord& rec) const = 0;
+
+    virtual AABB BoundingBox() const = 0;
 };
